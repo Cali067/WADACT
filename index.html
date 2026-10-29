@@ -1,0 +1,242 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Post Explorer</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6fb;
+            color: #1f2937;
+        }
+
+        header {
+            background: #0b43d9;
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        header h1 {
+            margin: 0 0 10px;
+        }
+
+        header p {
+            margin: 0;
+            color: #e0e7ff;
+        }
+
+        main {
+            width: 90%;
+            max-width: 1100px;
+            margin: 30px auto;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: #0b43d9;
+            color: white;
+            border: none;
+            border-radius: 7px;
+            padding: 12px 20px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0835ad;
+        }
+
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        #status {
+            margin: 15px 0;
+            font-weight: bold;
+        }
+
+        .posts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+        }
+
+        .post-card {
+            background: white;
+            border-radius: 10px;
+            padding: 22px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.07);
+            border-top: 4px solid #0b43d9;
+        }
+
+        .post-number {
+            color: #0b43d9;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .post-card h2 {
+            font-size: 19px;
+            text-transform: capitalize;
+            margin: 12px 0;
+        }
+
+        .post-card p {
+            line-height: 1.6;
+            color: #4b5563;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .error {
+            color: #dc2626;
+        }
+
+        .success {
+            color: #15803d;
+        }
+
+        footer {
+            text-align: center;
+            color: #6b7280;
+            padding: 25px;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Dynamic Post Explorer</h1>
+        <p>Explore blog posts fetched from an API</p>
+    </header>
+
+    <main>
+        <section class="controls">
+            <button id="loadButton">Load Posts</button>
+            <button id="retryButton" class="hidden">Retry Request</button>
+        </section>
+
+        <p id="status" role="status" aria-live="polite">
+            Click "Load Posts" to get started.
+        </p>
+
+        <section
+            id="postsContainer"
+            class="posts-container"
+            aria-label="Blog posts"
+        ></section>
+    </main>
+
+    <footer>
+        Week 7 — Fetch API &amp; Asynchronous Data
+    </footer>
+
+    <script>
+        const API_URL = "https://jsonplaceholder.typicode.com/posts";
+
+        const loadButton = document.getElementById("loadButton");
+        const retryButton = document.getElementById("retryButton");
+        const statusMessage = document.getElementById("status");
+        const postsContainer = document.getElementById("postsContainer");
+
+        // Load posts when the user clicks the button.
+        loadButton.addEventListener("click", fetchPosts);
+
+        // Allow the user to retry if the request fails.
+        retryButton.addEventListener("click", fetchPosts);
+
+        async function fetchPosts() {
+            // Show loading feedback.
+            statusMessage.textContent = "Loading posts, please wait...";
+            statusMessage.className = "";
+            postsContainer.replaceChildren();
+
+            loadButton.disabled = true;
+            retryButton.classList.add("hidden");
+
+            try {
+                // Fetch data from the API.
+                const response = await fetch(API_URL);
+
+                // Check for HTTP errors.
+                if (!response.ok) {
+                    throw new Error(
+                        `HTTP Error: ${response.status}`
+                    );
+                }
+
+                // Convert the response into JavaScript data.
+                const posts = await response.json();
+
+                // Display only the first five posts.
+                const firstFivePosts = posts.slice(0, 5);
+
+                displayPosts(firstFivePosts);
+
+                statusMessage.textContent =
+                    "Successfully loaded 5 posts!";
+                statusMessage.className = "success";
+
+            } catch (error) {
+                // Handle network or HTTP errors.
+                console.error("Failed to fetch posts:", error);
+
+                statusMessage.textContent =
+                    "Unable to load posts. Please check your internet connection and try again.";
+                statusMessage.className = "error";
+
+                // Show the retry button.
+                retryButton.classList.remove("hidden");
+
+            } finally {
+                // Re-enable the load button after the request.
+                loadButton.disabled = false;
+            }
+        }
+
+        function displayPosts(posts) {
+            // Build the post cards safely using DOM methods.
+            const fragment = document.createDocumentFragment();
+
+            posts.forEach((post) => {
+                const card = document.createElement("article");
+                card.className = "post-card";
+
+                const number = document.createElement("span");
+                number.className = "post-number";
+                number.textContent = `POST #${post.id}`;
+
+                const title = document.createElement("h2");
+                title.textContent = post.title;
+
+                const body = document.createElement("p");
+                body.textContent = post.body;
+
+                card.append(number, title, body);
+                fragment.appendChild(card);
+            });
+
+            postsContainer.replaceChildren(fragment);
+        }
+    </script>
+</body>
+</html>
